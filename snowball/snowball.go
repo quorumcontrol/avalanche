@@ -3,14 +3,15 @@ package snowball
 import (
 	"time"
 	"github.com/quorumcontrol/avalanche/member"
+	"github.com/ipfs/go-ipld-cbor"
 )
 
 
-func OnQuery(n *member.Node, state string, responseChan chan string) {
+func OnQuery(n *member.Node, transaction *cbornode.Node, responseChan chan *cbornode.Node) {
 	//fmt.Printf("node %v received onQuery with state: %v\n", n.Id, state)
-	if n.State == "" {
-		n.State = state
-		n.LastState = state
+	if n.State == nil {
+		n.State = transaction
+		n.LastState = transaction
 	}
 	<-time.After(time.Duration(n.System.Metadata["ArtificialLatency"].(int)) * time.Millisecond)
 	responseChan <- n.State
@@ -20,11 +21,11 @@ func OnQuery(n *member.Node, state string, responseChan chan string) {
 		n.Metadata["didKickOff"] = true
 		go func() {
 			for {
-				responses := make(map[string]int)
+				responses := make(map[*cbornode.Node]int)
 				for i := 0; i < n.System.K; i++ {
 					node := n.System.Nodes.RandNode()
 					//fmt.Printf("node %v is querying %v\n", n.Id, node.Id)
-					resp,err := node.SendQuery(state)
+					resp,err := node.SendQuery(transaction)
 					if err == nil {
 						responses[resp]++
 					}

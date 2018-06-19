@@ -6,6 +6,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"strconv"
 	"github.com/quorumcontrol/avalanche/member"
+	"github.com/ipfs/go-ipld-cbor"
+	"github.com/multiformats/go-multihash"
 )
 
 func TestNodes(t *testing.T) {
@@ -35,10 +37,12 @@ func TestNodes(t *testing.T) {
 
 	system.Nodes = holder
 
+	state,_ := cbornode.WrapObject(true, multihash.SHA2_256, -1)
+
 	node := system.Nodes.RandNode()
-	resp,err := node.SendQuery("test")
+	resp,err := node.SendQuery(state)
 	assert.Nil(t, err)
-	assert.Equal(t, "test", resp)
+	assert.Equal(t, state, resp)
 
 
 	start := time.Now()

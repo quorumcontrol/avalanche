@@ -5,6 +5,7 @@ import (
 	"time"
 	"fmt"
 	"math/rand"
+	"github.com/ipfs/go-ipld-cbor"
 )
 
 type NodeId string
@@ -18,22 +19,22 @@ type NodeSystem struct {
 	Metadata map[string]interface{}
 }
 
-type stateQuery struct {
-	state string
-	responseChan chan string
+type transactionQuery struct {
+	transaction *cbornode.Node
+	responseChan chan *cbornode.Node
 }
 
 type Node struct {
 	Id NodeId
-	State string
-	LastState string
-	Incoming chan stateQuery
+	State *cbornode.Node
+	LastState *cbornode.Node
+	Incoming chan transactionQuery
 	StopChan chan bool
-	Counts map[string]int
+	Counts map[*cbornode.Node]int
 	Count int
 	System *NodeSystem
 	Accepted bool
-	OnQuery func(*Node, string, chan string)
+	OnQuery func(*Node, *cbornode.Node, chan *cbornode.Node)
 	Metadata map[string]interface{}
 }
 
@@ -42,9 +43,9 @@ type NodeHolder map[NodeId]*Node
 func NewNode(system *NodeSystem) *Node {
 	return &Node{
 		Id: NodeId(uuid.New().String()),
-		Incoming: make(chan stateQuery, system.Beta),
+		Incoming: make(chan transactionQuery, system.Beta),
 		StopChan: make(chan bool),
-		Counts: make(map[string]int),
+		Counts: make(map[*cbornode.Node]int),
 		System: system,
 		Metadata: make(map[string]interface{}),
 	}
@@ -57,7 +58,7 @@ func (n *Node) Start() error {
 			case <-n.StopChan:
 				break
 			case query := <- n.Incoming:
-				n.OnQuery(n, query.state, query.responseChan)
+				n.OnQuery(n, query.transaction, query.responseChan)
 			}
 		}
 	}()
@@ -70,17 +71,17 @@ func (n *Node) Stop() error {
 }
 
 
-func (n *Node) SendQuery(state string) (string,error) {
+func (n *Node) SendQuery(state *cbornode.Node) (*cbornode.Node,error) {
 	t := time.After(10 * time.Second)
-	respChan := make(chan string)
-	n.Incoming <- stateQuery{
-		state: state,
+	respChan := make(chan *cbornode.Node)
+	n.Incoming <- transactionQuery{
+		transaction: state,
 		responseChan: respChan,
 	}
 	select {
 	case <-t:
 		fmt.Printf("timeout on sendquery")
-		return "", fmt.Errorf("timeout")
+		return nil, fmt.Errorf("timeout")
 	case resp := <-respChan:
 		return resp,nil
 	}

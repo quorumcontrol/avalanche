@@ -14,6 +14,56 @@
   version = "0.2"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/ipfs/go-block-format"
+  packages = ["."]
+  revision = "7dcdd1eba3d230c4da89e059bd736d2bcf5355f9"
+
+
+
+[[projects]]
+  branch = "master"
+  name = "github.com/ipfs/go-cid"
+  packages = ["."]
+  revision = "078355866b1dda1658b5fdc5496ed7e25fdcf883"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/ipfs/go-ipfs-util"
+  packages = ["."]
+  revision = "9ed527918c2f20abdf0adfab0553cd87db34f656"
+
+[[projects]]
+  branch = "refmt"
+  name = "github.com/ipfs/go-ipld-cbor"
+  packages = ["."]
+  revision = "8b666bca090899848849a507a008080db0fcfe21"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/ipfs/go-ipld-format"
+  packages = ["."]
+  revision = "6b4c9ea0f786788f3ee4e458ca39bb3f4da2ee71"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mr-tron/base58"
+  packages = ["base58"]
+  revision = "c1bdf7c52f59d6685ca597b9955a443ff95eeee6"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/multiformats/go-multibase"
+  packages = ["."]
+  revision = "dfd5076869faca5aed2886dcba60b44a0d0e9c01"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/multiformats/go-multihash"
+  packages = ["."]
+  revision = "265e72146e710ff649c6982e3699d01d4e9a18bb"
+
+[[projects]]
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
@@ -25,9 +75,21 @@
   revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
   version = "v1.2.2"
 
+[[projects]]
+  branch = "master"
+  name = "github.com/whyrusleeping/base32"
+  packages = ["."]
+  revision = "c30ac30633ccdabefe87eb12465113f06f1bab75"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/whyrusleeping/cbor"
+  packages = ["go"]
+  revision = "63513f603b11583741970c5045ea567130ddb492"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9f60ac31c0a7193ba49adf5227b1bf954ad515867d1451f04054ede728305597"
+  inputs-digest = "c0f9df3b847ba99ecacfa1af78fbd49859f365b717dba485c95068316f58d12e"
   solver-name = "gps-cdcl"
   solver-version = 1
