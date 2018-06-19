@@ -5,23 +5,25 @@ import (
 	"time"
 	"github.com/stretchr/testify/assert"
 	"strconv"
+	"github.com/quorumcontrol/avalanche/member"
 )
 
 func TestNodes(t *testing.T) {
-	system := &NodeSystem{
-		N: 1000,
-		K: 10,
-		Alpha: 8, // slight deviation to avoid floats, just calculate k*a from the paper
+	system := &member.NodeSystem{
+		N: 10000,
+		K: 5,
+		Alpha: 4, // slight deviation to avoid floats, just calculate k*a from the paper
 		Beta: 10,
 		ArtificialLatency: 100, // in ms
 	}
 
-	holder := make(NodeHolder)
+	holder := make(member.NodeHolder)
 	for i := 0; i < system.N; i++ {
-		node :=  NewNode(system)
-		node.Id = NodeId(strconv.Itoa(i)) // for readability of the logs
+		node :=  member.NewNode(system)
+		node.Id = member.NodeId(strconv.Itoa(i)) // for readability of the logs
 		holder[node.Id] = node
 		node.Start()
+		node.OnQuery = OnQuery
 	}
 	defer func() {
 		for _,node := range holder {
@@ -31,7 +33,7 @@ func TestNodes(t *testing.T) {
 
 	system.Nodes = holder
 
-	node := randNode(holder)
+	node := system.Nodes.RandNode()
 	resp,err := node.SendQuery("test")
 	assert.Nil(t, err)
 	assert.Equal(t, "test", resp)
