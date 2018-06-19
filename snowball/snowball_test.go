@@ -14,7 +14,9 @@ func TestNodes(t *testing.T) {
 		K: 5,
 		Alpha: 4, // slight deviation to avoid floats, just calculate k*a from the paper
 		Beta: 10,
-		ArtificialLatency: 100, // in ms
+		Metadata: map[string]interface{}{
+			"ArtificialLatency": 100,
+		},
 	}
 
 	holder := make(member.NodeHolder)

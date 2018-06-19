@@ -12,7 +12,7 @@ func OnQuery(n *member.Node, state string, responseChan chan string) {
 		n.State = state
 		n.LastState = state
 	}
-	<-time.After(time.Duration(n.System.ArtificialLatency) * time.Millisecond)
+	<-time.After(time.Duration(n.System.Metadata["ArtificialLatency"].(int)) * time.Millisecond)
 	responseChan <- n.State
 
 	ok,val := n.Metadata["didKickOff"].(bool)

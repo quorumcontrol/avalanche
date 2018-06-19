@@ -15,7 +15,7 @@ type NodeSystem struct {
 	Alpha int // slight deviation to avoid floats, just calculate k*a from the paper
 	Beta int
 	Nodes NodeHolder
-	ArtificialLatency int // in ms
+	Metadata map[string]interface{}
 }
 
 type stateQuery struct {
