@@ -50,7 +50,7 @@ func OnQuery(n *member.Node, transaction *cbornode.Node, responseChan chan *cbor
 						//fmt.Printf("node %v did not get to alpha\n", n.Id)
 					}
 				}
-				if n.Count > n.System.Beta {
+				if n.Count > n.System.BetaOne {
 					//fmt.Printf("stopping because beta reached\n")
 					break
 				}

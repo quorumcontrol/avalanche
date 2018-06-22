@@ -12,10 +12,10 @@ import (
 
 func TestNodes(t *testing.T) {
 	system := &member.NodeSystem{
-		N: 10000,
-		K: 5,
-		Alpha: 4, // slight deviation to avoid floats, just calculate k*a from the paper
-		Beta: 10,
+		N:       10000,
+		K:       5,
+		Alpha:   4, // slight deviation to avoid floats, just calculate k*a from the paper
+		BetaOne: 10,
 		Metadata: map[string]interface{}{
 			"ArtificialLatency": 100,
 		},

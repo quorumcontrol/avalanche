@@ -11,11 +11,12 @@ import (
 type NodeId string
 
 type NodeSystem struct {
-	N int
-	K int
-	Alpha int // slight deviation to avoid floats, just calculate k*a from the paper
-	Beta int
-	Nodes NodeHolder
+	N        int
+	K        int
+	Alpha    int // slight deviation to avoid floats, just calculate k*a from the paper
+	BetaOne  int
+	BetaTwo int
+	Nodes    NodeHolder
 	Metadata map[string]interface{}
 }
 
@@ -43,7 +44,7 @@ type NodeHolder map[NodeId]*Node
 func NewNode(system *NodeSystem) *Node {
 	return &Node{
 		Id: NodeId(uuid.New().String()),
-		Incoming: make(chan transactionQuery, system.Beta),
+		Incoming: make(chan transactionQuery, system.BetaOne),
 		StopChan: make(chan bool),
 		Counts: make(map[*cbornode.Node]int),
 		System: system,
@@ -87,6 +88,7 @@ func (n *Node) SendQuery(state *cbornode.Node) (*cbornode.Node,error) {
 	}
 }
 
+//TODO: this is not cryptographically sound
 func (nh NodeHolder) RandNode() *Node {
 	i := rand.Intn(len(nh))
 	for _,node := range nh {
