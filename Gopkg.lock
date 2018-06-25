@@ -2,10 +2,28 @@
 
 
 [[projects]]
+  name = "github.com/coreos/bbolt"
+  packages = ["."]
+  revision = "583e8937c61f1af6513608ccc75c97b6abdf4ff9"
+  version = "v1.3.0"
+
+[[projects]]
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/ethereum/go-ethereum"
+  packages = ["log"]
+  revision = "dea1ce052a10cd7d401a5c04f83f371a06fe293c"
+  version = "v1.8.11"
+
+[[projects]]
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  revision = "259ab82a6cad3992b4e21ff5cac294ccb06474bc"
+  version = "v1.7.0"
 
 [[projects]]
   name = "github.com/google/uuid"
@@ -92,6 +110,12 @@
   revision = "474b602855ed928fc5bb3448bd0dae4a6fe78d96"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/quorumcontrol/qc3"
+  packages = ["storage"]
+  revision = "b387bfa2a0fafde1c08207ed53ffb504ca97e553"
+
+[[projects]]
   name = "github.com/spaolacci/murmur3"
   packages = ["."]
   revision = "9f5d223c60793748f04a9d5b4b4eacddfc1f755d"
@@ -112,18 +136,18 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
-  packages = ["blake2s","sha3"]
+  packages = ["blake2s","internal/subtle","nacl/secretbox","pbkdf2","poly1305","salsa20/salsa","scrypt","sha3"]
   revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
-  packages = ["cpu"]
+  packages = ["cpu","unix"]
   revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c2d5c02c264a5a56f64c9667f85cc3030c0f6d65431e12aef1321099375f9aba"
+  inputs-digest = "2a52f8d5c5790369e2e9bf958a8976bf5d98f49978a9ac96390693ddb8217f17"
   solver-name = "gps-cdcl"
   solver-version = 1

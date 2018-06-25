@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/rand"
 	"github.com/ipfs/go-ipld-cbor"
+	"github.com/quorumcontrol/avalanche/storage"
 )
 
 type NodeId string
@@ -36,12 +37,15 @@ type Node struct {
 	System *NodeSystem
 	Accepted bool
 	OnQuery func(*Node, *cbornode.Node, chan *cbornode.Node)
+	OnStart func(*Node)
+	OnStop func(*Node)
 	Metadata map[string]interface{}
+	Storage storage.Storage
 }
 
 type NodeHolder map[NodeId]*Node
 
-func NewNode(system *NodeSystem) *Node {
+func NewNode(system *NodeSystem, storage storage.Storage) *Node {
 	return &Node{
 		Id: NodeId(uuid.New().String()),
 		Incoming: make(chan transactionQuery, system.BetaOne),
@@ -49,6 +53,7 @@ func NewNode(system *NodeSystem) *Node {
 		Counts: make(map[*cbornode.Node]int),
 		System: system,
 		Metadata: make(map[string]interface{}),
+		Storage: storage,
 	}
 }
 
@@ -63,11 +68,17 @@ func (n *Node) Start() error {
 			}
 		}
 	}()
+	if n.OnStart != nil {
+		n.OnStart(n)
+	}
 	return nil
 }
 
 func (n *Node) Stop() error {
 	n.StopChan <- true
+	if n.OnStop != nil {
+		n.OnStop(n)
+	}
 	return nil
 }
 

@@ -8,6 +8,7 @@ import (
 	"github.com/quorumcontrol/avalanche/member"
 	"github.com/ipfs/go-ipld-cbor"
 	"github.com/multiformats/go-multihash"
+	"github.com/quorumcontrol/avalanche/storage"
 )
 
 func TestNodes(t *testing.T) {
@@ -23,7 +24,8 @@ func TestNodes(t *testing.T) {
 
 	holder := make(member.NodeHolder)
 	for i := 0; i < system.N; i++ {
-		node :=  member.NewNode(system)
+		store := storage.NewMemStorage()
+		node :=  member.NewNode(system, store)
 		node.Id = member.NodeId(strconv.Itoa(i)) // for readability of the logs
 		holder[node.Id] = node
 		node.Start()
