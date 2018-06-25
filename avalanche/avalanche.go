@@ -10,6 +10,7 @@ import (
 	"math/rand"
 	"github.com/google/uuid"
 	"github.com/quorumcontrol/avalanche/storage"
+	"log"
 )
 
 var GenesisConflictSet *ConflictSet
@@ -38,7 +39,7 @@ func init() {
 		WireTransaction: genesisWireTransaction,
 		Chit: true,
 		Accepted: true,
-		Count: 1,
+		Count: 0,
 	}
 
 	GenesisConflictSet = &ConflictSet{
@@ -120,6 +121,7 @@ func NewNode(system *NodeSystem, storage storage.Storage, app Application) *Node
 
 func (n *Node) Start() error {
 	ticker := time.NewTicker(500 * time.Millisecond)
+	nextUnqueried := make(chan bool, 2)
 
 	go func() {
 		for {
@@ -130,7 +132,53 @@ func (n *Node) Start() error {
 			case query := <-n.Incoming:
 				n.OnQuery(n, query.transaction, query.responseChan)
 			case <-ticker.C:
-				//TODO: unqueried transaction stuff
+				nextUnqueried <- true
+			case <-nextUnqueried:
+				n.UnqueriedTransactionLock.RLock()
+				if len(n.UnqueriedTransactions) > 0 {
+					n.UnqueriedTransactionLock.Lock()
+					for key,trans := range n.UnqueriedTransactions {
+
+						wire,_ := trans.WireTransaction.CborNode() // TODO: handle error
+
+						responses := make(map[bool]int)
+						for i := 0; i < n.System.K; i++ {
+							node := n.System.Nodes.RandNode()
+							//fmt.Printf("node %v is querying %v\n", n.Id, node.Id)
+							respBytes,err := node.SendQuery(wire)
+							if err == nil {
+								var resp bool
+								cbornode.DecodeInto(respBytes.RawData(), &resp)
+								responses[resp]++
+
+							}
+							//fmt.Printf("node %v received response %v from %v\n", n.Id, resp, node.Id)
+						}
+						//fmt.Printf("node %v responses: %v\n", n.Id, responses)
+						for state,count := range responses {
+							if count > n.System.Alpha {
+								if state {
+									delete(n.UnqueriedTransactions, key)
+									trans,_ := n.GetTransaction(trans.Cid())
+									trans.Chit = true
+								}
+							} else {
+								log.Printf("node %v did not get to alpha\n", n.Id)
+							}
+						}
+
+
+						n.UnqueriedTransactionLock.Unlock()
+						break
+					}
+					if len(n.UnqueriedTransactions) > 0 {
+						nextUnqueried <- true
+					}
+					n.UnqueriedTransactionLock.Unlock()
+				}
+
+				n.UnqueriedTransactionLock.RUnlock()
+
 			}
 		}
 	}()
@@ -203,15 +251,20 @@ type WireTransaction struct {
 }
 
 func (wt WireTransaction) Cid() *cid.Cid {
-	id,err := cbornode.WrapObject(wt, multihash.SHA2_256, -1)
+	obj,err := wt.CborNode()
 	if err != nil {
 		panic(err)
 	}
-	return id.Cid()
+	return obj.Cid()
+}
+
+func (wt WireTransaction) CborNode() (*cbornode.Node,error) {
+	return cbornode.WrapObject(wt, multihash.SHA2_256, -1)
 }
 
 type AvalancheTransaction struct {
 	WireTransaction
+	Ancestors map[string]bool
 	Chit bool
 	Accepted bool
 	Count int
@@ -227,18 +280,38 @@ func (at *AvalancheTransaction) Save(n *Node) error {
 	if err != nil {
 		return err
 	}
+
+	for _,parentId := range at.Parents {
+		parent,err := n.GetTransaction(parentId)
+		if err == nil {
+			_,ok := parent.Ancestors[at.Cid().KeyString()]
+			if !ok {
+				parent.Ancestors[at.Cid().KeyString()] = true
+				parent.Save(n)
+			}
+		}
+	}
+
 	return n.Storage.Set(TransactionBucket, at.Cid().Bytes(), atBytes.RawData())
+}
+
+func (at *AvalancheTransaction) UpdateCount(n *Node) {
+	count := 0
+	for stringId,_ := range at.Ancestors {
+		cid,_ := cid.Decode(stringId)
+		trans,_:= n.GetTransaction(cid)
+	}
 }
 
 func (at *AvalancheTransaction) IsPreferred(n *Node) bool {
 	n.ConflictSetLock.RLock()
 	defer n.ConflictSetLock.RUnlock()
 
-	conflicSet,err := n.GetConflictSet(at.ConflictSetId)
+	conflictSet,err := n.GetConflictSet(at.ConflictSetId)
 	if err != nil {
 		panic(err) //TODO: no panic
 	}
-	return conflicSet.Pref == at.Cid()
+	return conflictSet.Pref == at.Cid()
 }
 
 func (at *AvalancheTransaction) IsStronglyPreferred(n *Node) bool {
