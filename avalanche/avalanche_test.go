@@ -8,6 +8,7 @@ import (
 	"github.com/ipfs/go-ipld-cbor"
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
+	"log"
 )
 
 type TestApplication struct {
@@ -38,8 +39,8 @@ func TestDoesntError(t *testing.T) {
 		node :=  NewNode(system, store, app)
 		node.Id = NodeId(strconv.Itoa(i)) // for readability of the logs
 		holder[node.Id] = node
-		node.Start()
 		node.OnQuery = OnQuery
+		node.Start()
 	}
 	defer func() {
 		for _,node := range holder {
@@ -50,14 +51,41 @@ func TestDoesntError(t *testing.T) {
 	system.Nodes = holder
 
 	wire := &WireTransaction{
-		Payload: nil,
+		Payload: []byte("conflictSet1"),
 		Parents: []*cid.Cid{GenesisCid},
 	}
 
 	wireBytes,_ := cbornode.WrapObject(wire, multihash.SHA2_256, -1)
 
 	node := system.Nodes.RandNode()
+	log.Printf("random node from test is: %v", node.Id)
+
 	resp,err := node.SendQuery(wireBytes)
 	assert.Nil(t, err)
-	assert.Equal(t, false, resp)
+	assert.True(t, respToBool(resp))
+
+	wire2 := &WireTransaction{
+		Payload: []byte("conflictSet1"),
+		Parents: []*cid.Cid{wire.Cid()},
+	}
+
+	wire2Bytes,_ := cbornode.WrapObject(wire2, multihash.SHA2_256, -1)
+
+	log.Printf("sending wire2 to node %v", node.Id)
+
+	// right now we want to send to the same node to make sure it's not strongly preferred
+	// uncomment to choose a different node
+	//node = system.Nodes.RandNode()
+	resp,err = node.SendQuery(wire2Bytes)
+	assert.Nil(t, err)
+	assert.False(t, respToBool(resp))
+
+	//assert.True(t, false)
+}
+
+
+func respToBool(resp *cbornode.Node) bool {
+	var trueOrFalse bool
+	cbornode.DecodeInto(resp.RawData(), &trueOrFalse) //TODO: handle error
+	return trueOrFalse
 }
