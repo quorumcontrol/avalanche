@@ -2,10 +2,10 @@ package snowball
 
 import (
 	"time"
-	"github.com/quorumcontrol/avalanche/member"
-	"github.com/ipfs/go-ipld-cbor"
-)
 
+	"github.com/ipfs/go-ipld-cbor"
+	"github.com/quorumcontrol/avalanche/member"
+)
 
 func OnQuery(n *member.Node, transaction *cbornode.Node, responseChan chan *cbornode.Node) {
 	//fmt.Printf("node %v received onQuery with state: %v\n", n.Id, state)
@@ -16,23 +16,38 @@ func OnQuery(n *member.Node, transaction *cbornode.Node, responseChan chan *cbor
 	<-time.After(time.Duration(n.System.Metadata["ArtificialLatency"].(int)) * time.Millisecond)
 	responseChan <- n.State
 
-	ok,val := n.Metadata["didKickOff"].(bool)
+	ok, val := n.Metadata["didKickOff"].(bool)
 	if !ok || !val {
 		n.Metadata["didKickOff"] = true
 		go func() {
 			for {
-				responses := make(map[*cbornode.Node]int)
+				responseCounts := make(map[*cbornode.Node]int)
+				responses := make([]chan *cbornode.Node, n.System.K)
 				for i := 0; i < n.System.K; i++ {
-					node := n.System.Nodes.RandNode()
+					respChan := make(chan *cbornode.Node, 1)
+					responses[i] = respChan
 					//fmt.Printf("node %v is querying %v\n", n.Id, node.Id)
-					resp,err := node.SendQuery(transaction)
-					if err == nil {
-						responses[resp]++
-					}
+					go func(respChan chan *cbornode.Node) {
+						node := n.System.Nodes.RandNode()
+						resp, err := node.SendQuery(transaction)
+						if err == nil {
+							respChan <- resp
+						} else {
+							respChan <- nil
+						}
+					}(respChan)
+
 					//fmt.Printf("node %v received response %v from %v\n", n.Id, resp, node.Id)
 				}
-				//fmt.Printf("node %v responses: %v\n", n.Id, responses)
-				for state,count := range responses {
+
+				for _, responseChan := range responses {
+					if resp := <-responseChan; resp != nil {
+						responseCounts[resp]++
+					}
+				}
+
+				//fmt.Printf("node %v responseCounts: %v\n", n.Id, responseCounts)
+				for state, count := range responseCounts {
 					if count > n.System.Alpha {
 						n.Counts[state]++
 						if n.Counts[state] > n.Counts[n.State] {
