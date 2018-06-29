@@ -104,7 +104,7 @@ func NewNode(system *NodeSystem, storage storage.Storage, app Application) *Node
 
 	n := &Node{
 		Id: NodeId(uuid.New().String()),
-		Incoming: make(chan transactionQuery, system.BetaOne),
+		Incoming: make(chan transactionQuery, len(system.Nodes)),
 		StopChan: make(chan bool),
 		Counts: make(map[*cbornode.Node]int),
 		System: system,
@@ -144,7 +144,7 @@ func (n *Node) Start() error {
 				n.UnqueriedTransactionLock.RLock()
 				if len(n.UnqueriedTransactions) > 0 {
 					n.UnqueriedTransactionLock.RUnlock()
-					log.Printf("querying an unqueried transaction")
+					log.Printf("node %v querying an unqueried transaction", n.Id)
 					for key,trans := range n.UnqueriedTransactions {
 						wire,_ := trans.WireTransaction.CborNode() // TODO: handle error
 
@@ -155,8 +155,12 @@ func (n *Node) Start() error {
 							respChan := make(chan *cbornode.Node)
 							responses[i] = respChan
 							go func(respChan chan *cbornode.Node) {
-								node := n.System.Nodes.RandNode()
-								//fmt.Printf("node %v is querying %v\n", n.Id, node.Id)
+								var node *Node
+								for node == nil || node.Id == n.Id {
+									node = n.System.Nodes.RandNode()
+								}
+								log.Printf("node %v is querying node %v with trans %v", n.Id, node.Id, trans.Cid())
+
 								respBytes,err := node.SendQuery(wire) //TODO: handle error
 								if err != nil {
 									respChan <- nil
@@ -185,14 +189,14 @@ func (n *Node) Start() error {
 									trans.UpdateCount(n)
 									HandleUpdatedTransaction(n, trans)
 								}
+								n.UnqueriedTransactionLock.Lock()
+								delete(n.UnqueriedTransactions, key)
+								n.UnqueriedTransactionLock.Unlock()
 							} else {
 								log.Printf("node %v did not get to alpha\n", n.Id)
 							}
 						}
 
-						n.UnqueriedTransactionLock.Lock()
-						delete(n.UnqueriedTransactions, key)
-						n.UnqueriedTransactionLock.Unlock()
 						break
 					}
 					if len(n.UnqueriedTransactions) > 0 {
@@ -249,8 +253,7 @@ func (n *Node) GetTransaction(id *cid.Cid) (*AvalancheTransaction, error) {
 }
 
 func (n *Node) SendQuery(state *cbornode.Node) (*cbornode.Node,error) {
-	log.Printf("sending query to %v", n.Id)
-	t := time.After(10 * time.Second)
+	t := time.After(20 * time.Second)
 	respChan := make(chan *cbornode.Node)
 	n.Incoming <- transactionQuery{
 		transaction: state,
@@ -258,7 +261,7 @@ func (n *Node) SendQuery(state *cbornode.Node) (*cbornode.Node,error) {
 	}
 	select {
 	case <-t:
-		log.Printf("timeout on sendquery")
+		log.Printf("node %v timeout on sendquery", n.Id)
 		return nil, fmt.Errorf("timeout")
 	case resp := <-respChan:
 		return resp,nil

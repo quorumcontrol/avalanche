@@ -9,6 +9,7 @@ import (
 	"github.com/ipfs/go-cid"
 	"github.com/multiformats/go-multihash"
 	"log"
+	"time"
 )
 
 type TestApplication struct {
@@ -21,8 +22,8 @@ func (ta *TestApplication) GetConflictSetId(at *AvalancheTransaction) string {
 
 func TestDoesntError(t *testing.T) {
 	system := &NodeSystem{
-		N:       10,
-		K:       5,
+		N:       100,
+		K:       10,
 		Alpha:   4, // slight deviation to avoid floats, just calculate k*a from the paper
 		BetaOne: 10,
 		BetaTwo: 150,
@@ -79,6 +80,8 @@ func TestDoesntError(t *testing.T) {
 	resp,err = node.SendQuery(wire2Bytes)
 	assert.Nil(t, err)
 	assert.False(t, respToBool(resp))
+
+	time.Sleep(20 * time.Second)
 
 	//assert.True(t, false)
 }
